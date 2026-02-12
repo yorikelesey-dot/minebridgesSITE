@@ -126,14 +126,14 @@ function HomePage() {
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Navigation Bar */}
       <nav className="border-b border-white/10 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-emerald-500">MineBridges</h1>
-            <span className="text-sm text-zinc-400">Ultimate Minecraft Asset Aggregator</span>
+        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-emerald-500">MineBridges</h1>
+            <span className="text-xs sm:text-sm text-zinc-400 hidden sm:inline">Ultimate Minecraft Asset Aggregator</span>
           </div>
           <Button
             asChild
-            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm"
           >
             <a
               href="https://t.me/MineBridges_bot"
@@ -158,9 +158,9 @@ function HomePage() {
         </div>
 
         {/* Content Area with Sidebar */}
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Filter Panel Sidebar */}
-          <aside className="w-64 flex-shrink-0">
+          <aside className="w-full lg:w-64 flex-shrink-0">
             <FilterPanel
               selectedCategory={selectedCategory}
               selectedSort={selectedSort}
@@ -170,7 +170,7 @@ function HomePage() {
           </aside>
 
           {/* Content Grid */}
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             <ContentGrid 
               items={items} 
               isLoading={isLoading} 

@@ -1,40 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { VersionFile } from '@/lib/types';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState, useEffect, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { VersionFile } from '@/lib/types';
+import { Download, ExternalLink, Calendar, HardDrive } from 'lucide-react';
 
 interface VersionSelectorProps {
   itemId: string;
   source: 'modrinth' | 'curseforge';
-  onVersionSelect?: (file: VersionFile) => void;
 }
 
-export function VersionSelector({ itemId, source, onVersionSelect }: VersionSelectorProps) {
+export function VersionSelector({ itemId, source }: VersionSelectorProps) {
   const [versions, setVersions] = useState<VersionFile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const [selectedGameVersion, setSelectedGameVersion] = useState<string>('');
   const [selectedLoader, setSelectedLoader] = useState<string>('');
   const [selectedVersion, setSelectedVersion] = useState<VersionFile | null>(null);
+  
+  // Search state for versions
+  const [versionSearch, setVersionSearch] = useState('');
 
   // Fetch versions on mount
   useEffect(() => {
-    async function fetchVersions() {
+    const fetchVersions = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
         setError(null);
         
         const response = await fetch(`/api/versions/${itemId}?source=${source}`);
-        
         if (!response.ok) {
           throw new Error('Failed to fetch versions');
         }
@@ -44,80 +40,69 @@ export function VersionSelector({ itemId, source, onVersionSelect }: VersionSele
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
-    }
+    };
 
     fetchVersions();
   }, [itemId, source]);
 
   // Get unique game versions from all version files
-  const availableGameVersions = Array.from(
-    new Set(versions.flatMap(v => v.gameVersions))
-  ).sort((a, b) => {
-    // Sort versions in descending order (newest first)
-    const parseVersion = (v: string) => {
-      const parts = v.split('.').map(p => parseInt(p) || 0);
-      return parts;
-    };
-    
-    const aParts = parseVersion(a);
-    const bParts = parseVersion(b);
-    
-    for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-      const aVal = aParts[i] || 0;
-      const bVal = bParts[i] || 0;
-      if (aVal !== bVal) return bVal - aVal;
-    }
-    return 0;
-  });
+  const gameVersions = useMemo(() => {
+    const versionSet = new Set<string>();
+    versions.forEach(v => {
+      v.gameVersions.forEach(gv => versionSet.add(gv));
+    });
+    return Array.from(versionSet).sort((a, b) => {
+      // Sort versions in descending order (newest first)
+      return b.localeCompare(a, undefined, { numeric: true });
+    });
+  }, [versions]);
 
-  // Get loaders compatible with selected game version
-  const availableLoaders = selectedGameVersion
-    ? Array.from(
-        new Set(
-          versions
-            .filter(v => v.gameVersions.includes(selectedGameVersion))
-            .flatMap(v => v.loaders)
-        )
-      ).sort()
-    : [];
+  // Filter versions by search query
+  const filteredGameVersions = useMemo(() => {
+    if (!versionSearch.trim()) return gameVersions;
+    const search = versionSearch.toLowerCase();
+    return gameVersions.filter(v => v.toLowerCase().includes(search));
+  }, [gameVersions, versionSearch]);
 
-  // Find the matching version file
+  // Get available loaders for selected game version
+  const availableLoaders = useMemo(() => {
+    if (!selectedGameVersion) return [];
+    
+    const loaderSet = new Set<string>();
+    versions
+      .filter(v => v.gameVersions.includes(selectedGameVersion))
+      .forEach(v => {
+        v.loaders.forEach(l => loaderSet.add(l));
+      });
+    
+    return Array.from(loaderSet).sort();
+  }, [versions, selectedGameVersion]);
+
+  // Find matching version file
   useEffect(() => {
-    if (selectedGameVersion && selectedLoader) {
-      const matchingVersion = versions.find(v =>
-        v.gameVersions.includes(selectedGameVersion) &&
-        v.loaders.includes(selectedLoader)
-      );
-      
-      setSelectedVersion(matchingVersion || null);
-      
-      if (matchingVersion && onVersionSelect) {
-        onVersionSelect(matchingVersion);
-      }
-    } else {
+    if (!selectedGameVersion || !selectedLoader) {
       setSelectedVersion(null);
+      return;
     }
-  }, [selectedGameVersion, selectedLoader, versions, onVersionSelect]);
 
-  // Reset loader when game version changes
-  useEffect(() => {
-    setSelectedLoader('');
-  }, [selectedGameVersion]);
+    const matchingVersion = versions.find(v =>
+      v.gameVersions.includes(selectedGameVersion) &&
+      v.loaders.includes(selectedLoader)
+    );
 
-  // Format file size for display
+    setSelectedVersion(matchingVersion || null);
+  }, [selectedGameVersion, selectedLoader, versions]);
+
+  // Format file size
   const formatFileSize = (bytes: number): string => {
-    if (bytes >= 1024 * 1024) {
-      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    }
-    if (bytes >= 1024) {
-      return `${(bytes / 1024).toFixed(2)} KB`;
-    }
-    return `${bytes} B`;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Format date for display
+  // Format date
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -126,147 +111,158 @@ export function VersionSelector({ itemId, source, onVersionSelect }: VersionSele
     });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="h-10 bg-zinc-900 animate-pulse rounded-md" />
-        <div className="h-10 bg-zinc-900 animate-pulse rounded-md" />
+      <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-400 text-sm p-4 bg-red-950/20 border border-red-900/50 rounded-md">
-        Error loading versions: {error}
+      <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
+        <p className="text-red-400 text-sm">{error}</p>
       </div>
     );
   }
 
   if (versions.length === 0) {
     return (
-      <div className="text-zinc-400 text-sm p-4 bg-zinc-900/50 border border-white/10 rounded-md">
-        No versions available for this item.
+      <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
+        <p className="text-zinc-400 text-sm">No versions available</p>
       </div>
     );
   }
 
-  const hasCompatibleVersion = selectedGameVersion && selectedLoader && selectedVersion;
-  const noCompatibleVersion = selectedGameVersion && selectedLoader && !selectedVersion;
-
   return (
-    <div className="space-y-4">
-      {/* Game Version Selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-300">
-          Minecraft Version
-        </label>
-        <Select value={selectedGameVersion} onValueChange={setSelectedGameVersion}>
-          <SelectTrigger className="bg-zinc-900 border-white/10 text-white">
-            <SelectValue placeholder="Select game version" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-white/10">
-            {availableGameVersions.map(version => (
-              <SelectItem
-                key={version}
-                value={version}
-                className="text-white focus:bg-zinc-800 focus:text-white"
-              >
-                {version}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Loader/Core Selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-300">
-          Mod Loader / Server Core
-        </label>
-        <Select
-          value={selectedLoader}
-          onValueChange={setSelectedLoader}
-          disabled={!selectedGameVersion || availableLoaders.length === 0}
-        >
-          <SelectTrigger className="bg-zinc-900 border-white/10 text-white disabled:opacity-50">
-            <SelectValue placeholder="Select loader" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-white/10">
-            {availableLoaders.map(loader => (
-              <SelectItem
-                key={loader}
-                value={loader}
-                className="text-white focus:bg-zinc-800 focus:text-white capitalize"
-              >
-                {loader}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* No Compatible Version Message */}
-      {noCompatibleVersion && (
-        <div className="text-amber-400 text-sm p-3 bg-amber-950/20 border border-amber-900/50 rounded-md">
-          No compatible version found for {selectedGameVersion} with {selectedLoader}.
+    <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
+      <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
+      
+      <div className="space-y-4">
+        {/* Game Version Selector with Search */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-2">
+            Minecraft Version
+          </label>
+          <input
+            type="text"
+            placeholder="Search versions (e.g., 1.20, 1.19.4)..."
+            value={versionSearch}
+            onChange={(e) => setVersionSearch(e.target.value)}
+            className="w-full px-3 py-2 mb-2 bg-zinc-800 border border-white/10 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+          />
+          <Select value={selectedGameVersion} onValueChange={setSelectedGameVersion}>
+            <SelectTrigger className="w-full bg-zinc-800 border-white/10">
+              <SelectValue placeholder="Select Minecraft version" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-800 border-white/10 max-h-60">
+              {filteredGameVersions.length > 0 ? (
+                filteredGameVersions.map(version => (
+                  <SelectItem key={version} value={version} className="text-white">
+                    {version}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-6 text-center text-zinc-400 text-sm">
+                  No versions found
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          {versionSearch && filteredGameVersions.length > 0 && (
+            <p className="text-xs text-zinc-500 mt-1">
+              Showing {filteredGameVersions.length} of {gameVersions.length} versions
+            </p>
+          )}
         </div>
-      )}
 
-      {/* Version Metadata */}
-      {hasCompatibleVersion && selectedVersion && (
-        <div className="space-y-3 p-4 bg-zinc-900/50 border border-white/10 rounded-md">
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-zinc-400">File Name:</span>
-              <span className="text-white font-mono text-xs">{selectedVersion.fileName}</span>
+        {/* Loader Selector */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-2">
+            Mod Loader / Core
+          </label>
+          <Select 
+            value={selectedLoader} 
+            onValueChange={setSelectedLoader}
+            disabled={!selectedGameVersion}
+          >
+            <SelectTrigger className="w-full bg-zinc-800 border-white/10">
+              <SelectValue placeholder={selectedGameVersion ? "Select loader" : "Select version first"} />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-800 border-white/10">
+              {availableLoaders.map(loader => (
+                <SelectItem key={loader} value={loader} className="text-white capitalize">
+                  {loader}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Version Metadata */}
+        {selectedVersion && (
+          <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-white/10">
+            <h4 className="font-medium text-white mb-3 text-sm sm:text-base break-words">{selectedVersion.fileName}</h4>
+            
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-zinc-400">
+                <Calendar className="w-4 h-4 flex-shrink-0" />
+                <span>Released: {formatDate(selectedVersion.releaseDate)}</span>
+              </div>
+              
+              <div className="flex items-center gap-2 text-zinc-400">
+                <HardDrive className="w-4 h-4 flex-shrink-0" />
+                <span>Size: {formatFileSize(selectedVersion.fileSize)}</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">File Size:</span>
-              <span className="text-white">{formatFileSize(selectedVersion.fileSize)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">Release Date:</span>
-              <span className="text-white">{formatDate(selectedVersion.releaseDate)}</span>
-            </div>
+
             {selectedVersion.changelog && (
-              <div className="pt-2 border-t border-white/10">
-                <span className="text-zinc-400">Changelog:</span>
-                <p className="text-white text-xs mt-1 line-clamp-3">
-                  {selectedVersion.changelog}
-                </p>
+              <div className="mt-3">
+                <a
+                  href={selectedVersion.changelog}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1"
+                >
+                  View Changelog
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             )}
-          </div>
 
-          {/* Download Button */}
-          <Button
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
-            onClick={() => {
-              if (selectedVersion.downloadUrl) {
-                window.open(selectedVersion.downloadUrl, '_blank');
-              }
-            }}
-            disabled={!selectedVersion.downloadUrl}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <Button
+              asChild
+              className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            Download
-          </Button>
-        </div>
-      )}
+              <a
+                href={selectedVersion.downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
+            </Button>
+          </div>
+        )}
+
+        {/* No Compatible Version Message */}
+        {selectedGameVersion && selectedLoader && !selectedVersion && (
+          <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-yellow-500/20">
+            <p className="text-yellow-400 text-sm">
+              No compatible version found for {selectedGameVersion} with {selectedLoader}.
+              Try selecting a different version or loader.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
