@@ -71,30 +71,53 @@ async function fetchModrinthResults(
   category: string,
   limit: number
 ): Promise<ContentItem[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const url = new URL(`${baseUrl}/api/modrinth/search`);
-  
-  url.searchParams.set('query', query);
-  url.searchParams.set('limit', limit.toString());
+  const modrinthUrl = new URL('https://api.modrinth.com/v2/search');
+  modrinthUrl.searchParams.set('query', query);
+  modrinthUrl.searchParams.set('limit', limit.toString());
   
   // Add category facet if specified
   if (category) {
     const facets = buildModrinthFacets(category);
     if (facets) {
-      url.searchParams.set('facets', facets);
+      modrinthUrl.searchParams.set('facets', facets);
     }
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(modrinthUrl.toString(), {
+    headers: {
+      'User-Agent': 'MineBridges/1.0',
+      ...(process.env.MODRINTH_API_KEY && {
+        'Authorization': process.env.MODRINTH_API_KEY
+      })
+    },
     next: { revalidate: 300 }
   });
 
   if (!response.ok) {
-    throw new Error(`Modrinth proxy error: ${response.status}`);
+    throw new Error(`Modrinth API error: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.results || [];
+  
+  // Transform Modrinth hits to ContentItem format
+  const { transformModrinthProject } = await import('@/lib/transformers');
+  const transformedResults = data.hits?.map((hit: any) => {
+    return transformModrinthProject({
+      source: 'modrinth',
+      project_id: hit.project_id,
+      title: hit.title,
+      description: hit.description,
+      icon_url: hit.icon_url,
+      author: hit.author,
+      downloads: hit.downloads,
+      project_type: hit.project_type,
+      date_modified: hit.date_modified,
+      slug: hit.slug,
+      categories: hit.categories
+    });
+  }) || [];
+  
+  return transformedResults;
 }
 
 /**
@@ -105,30 +128,59 @@ async function fetchCurseForgeResults(
   category: string,
   limit: number
 ): Promise<ContentItem[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const url = new URL(`${baseUrl}/api/curseforge/search`);
-  
-  url.searchParams.set('query', query);
-  url.searchParams.set('pageSize', limit.toString());
+  const apiKey = process.env.CURSEFORGE_API_KEY;
+  if (!apiKey) {
+    console.warn('CurseForge API key not configured, skipping CurseForge results');
+    return [];
+  }
+
+  const curseforgeUrl = new URL('https://api.curseforge.com/v1/mods/search');
+  curseforgeUrl.searchParams.set('gameId', '432'); // Minecraft
+  curseforgeUrl.searchParams.set('searchFilter', query);
+  curseforgeUrl.searchParams.set('pageSize', limit.toString());
   
   // Add classId if category is specified
   if (category) {
     const classId = getCurseForgeClassId(category);
     if (classId) {
-      url.searchParams.set('classId', classId);
+      curseforgeUrl.searchParams.set('classId', classId);
     }
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(curseforgeUrl.toString(), {
+    headers: {
+      'x-api-key': apiKey,
+      'Accept': 'application/json',
+      'User-Agent': 'MineBridges/1.0'
+    },
     next: { revalidate: 300 }
   });
 
   if (!response.ok) {
-    throw new Error(`CurseForge proxy error: ${response.status}`);
+    throw new Error(`CurseForge API error: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.results || [];
+  
+  // Transform CurseForge mods to ContentItem format
+  const { transformCurseForgeProject } = await import('@/lib/transformers');
+  const transformedResults = data.data?.map((mod: any) => {
+    return transformCurseForgeProject({
+      source: 'curseforge',
+      id: mod.id,
+      name: mod.name,
+      summary: mod.summary,
+      logo: mod.logo,
+      authors: mod.authors,
+      downloadCount: mod.downloadCount,
+      classId: mod.classId,
+      dateModified: mod.dateModified,
+      links: mod.links,
+      categories: mod.categories
+    });
+  }) || [];
+  
+  return transformedResults;
 }
 
 /**
