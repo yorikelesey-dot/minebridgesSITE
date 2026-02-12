@@ -57,7 +57,9 @@ function HomePage() {
       if (selectedSort) params.set('sort', selectedSort);
       if (selectedSource) params.set('source', selectedSource);
       
-      const response = await fetch(`/api/search?${params.toString()}`);
+      const response = await fetch(`/api/search?${params.toString()}`, {
+        cache: 'no-store' // Force fresh data, bypass cache
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
@@ -74,7 +76,11 @@ function HomePage() {
       }
       const data = await response.json();
       // API returns { results: [...], total: ..., source: ... }
-      return data.results || [];
+      // Ensure we always return an array
+      if (Array.isArray(data)) {
+        return data;
+      }
+      return Array.isArray(data.results) ? data.results : [];
     },
     enabled: isOnline,
     retry: (failureCount, error) => {
