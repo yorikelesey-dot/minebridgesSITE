@@ -72,7 +72,9 @@ function HomePage() {
           throw new Error(errorData.error || 'Failed to fetch search results');
         }
       }
-      return response.json();
+      const data = await response.json();
+      // API returns { results: [...], total: ..., source: ... }
+      return data.results || [];
     },
     enabled: isOnline,
     retry: (failureCount, error) => {
