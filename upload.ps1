@@ -1,4 +1,4 @@
-$Token = "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"
+$Token = "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"
 $RepoUrl = "https://yorikelesey-dot:$Token@github.com/yorikelesey-dot/minebridgesSITE.git"
 
 Write-Host "Preparing files..."
