@@ -1,10 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
-import { ContentItem } from '@/lib/types';
 import { ContentCard } from '@/components/content-card';
 import { SkeletonGrid } from '@/components/skeleton-grid';
+import { ContentItem } from '@/lib/types';
+import { motion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 
 interface ContentGridProps {
   items: ContentItem[];

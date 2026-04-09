@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { SearchBar } from '@/components/search-bar';
-import { FilterPanel } from '@/components/filter-panel';
 import { ContentGrid } from '@/components/content-grid';
+import { FilterPanel } from '@/components/filter-panel';
+import { SearchBar } from '@/components/search-bar';
 import { Button } from '@/components/ui/button';
-import { ContentItem } from '@/lib/types';
 import { errorMessages } from '@/lib/errors';
+import { ContentItem } from '@/lib/types';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,33 +123,43 @@ function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="relative min-h-screen bg-zinc-950 text-white overflow-hidden selection:bg-emerald-500/30">
+      {/* Animated Background Blobs */}
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob" />
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-emerald-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000" />
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-emerald-700 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000" />
+
       {/* Navigation Bar */}
-      <nav className="border-b border-white/10 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
-        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-emerald-500">MineBridges</h1>
-            <span className="text-xs sm:text-sm text-zinc-400 hidden sm:inline">Ultimate Minecraft Asset Aggregator</span>
+      <nav className="relative z-50 sticky top-0 border-b border-white/5 bg-zinc-950/40 backdrop-blur-xl supports-[backdrop-filter]:bg-zinc-950/40 transition-all duration-300">
+        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3 group cursor-default">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-br from-emerald-400 to-emerald-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">
+              MineBridges
+            </h1>
+            <span className="text-xs sm:text-sm font-medium text-zinc-400 opacity-0 sm:opacity-100 sm:group-hover:text-zinc-300 transition-colors">
+              Ultimate Minecraft Asset Aggregator
+            </span>
           </div>
           <Button
             asChild
-            className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm"
+            className="rounded-full bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all duration-300"
           >
             <a
               href="https://t.me/MineBridges_bot"
               target="_blank"
               rel="noopener noreferrer"
+              className="flex items-center gap-2 px-6"
             >
-              @MineBridges_bot
+              <span>@MineBridges_bot</span>
             </a>
           </Button>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Search Bar */}
-        <div className="mb-8">
+      <div className="relative z-10 container mx-auto px-4 py-8 sm:py-12">
+        {/* Search Bar - Center and pop it out */}
+        <div className="mb-10 max-w-3xl mx-auto transform transition-all duration-500 hover:scale-[1.01]">
           <SearchBar
             onSearch={handleSearch}
             initialValue={searchQuery}
@@ -160,7 +170,7 @@ function HomePage() {
         {/* Content Area with Sidebar */}
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Filter Panel Sidebar */}
-          <aside className="w-full lg:w-64 flex-shrink-0">
+          <aside className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-28 h-fit">
             <FilterPanel
               selectedCategory={selectedCategory}
               selectedSort={selectedSort}

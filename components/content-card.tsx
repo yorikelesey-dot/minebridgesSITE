@@ -1,10 +1,10 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { ContentItem } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ContentItem } from '@/lib/types';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 interface ContentCardProps {
   item: ContentItem;
@@ -24,46 +24,48 @@ export function ContentCard({ item, onClick }: ContentCardProps) {
   };
 
   return (
-    <Link href={`/item/${item.id}?source=${item.source}`}>
+    <Link href={`/item/${item.id}?source=${item.source}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xl">
       <Card
-        className="bg-zinc-950 border-white/10 hover:border-emerald-500/50 transition-all cursor-pointer overflow-hidden group"
+        className="relative h-full bg-zinc-900/30 backdrop-blur-md border border-white/5 hover:border-emerald-500/30 hover:bg-zinc-900/50 transition-all duration-500 cursor-pointer overflow-hidden group hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] flex flex-col"
         onClick={onClick}
       >
-        <div className="p-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/5 group-hover:to-transparent transition-all duration-500 rounded-xl" />
+        <div className="p-5 flex flex-col flex-grow relative z-10">
           {/* Icon and Source Badge */}
-          <div className="flex items-start gap-3 mb-3">
-            <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-900">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-zinc-950 border border-white/10 shadow-inner group-hover:scale-105 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-500">
               <Image
                 src={item.iconUrl}
                 alt={`${item.title} icon`}
                 width={64}
                 height={64}
-                className="object-cover"
+                className="object-cover w-full h-full"
                 unoptimized={item.iconUrl.startsWith('http')}
               />
             </div>
             
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-white text-lg line-clamp-2 group-hover:text-emerald-400 transition-colors">
+            <div className="flex-1 min-w-0 pt-0.5">
+              <h3 className="font-bold text-white text-lg leading-tight line-clamp-2 group-hover:text-emerald-400 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300">
                 {item.title}
               </h3>
-              <p className="text-sm text-zinc-400 mt-1">
-                by {item.author}
+              <p className="text-sm text-zinc-400 mt-1.5 font-medium flex items-center gap-1.5">
+                <span className="w-4 h-px bg-zinc-600 block rounded-full" />
+                {item.author}
               </p>
             </div>
           </div>
 
           {/* Description */}
-          <p className="text-sm text-zinc-300 line-clamp-2 mb-3">
+          <p className="text-sm text-zinc-300 line-clamp-2 mb-6 flex-grow leading-relaxed">
             {item.description}
           </p>
 
           {/* Footer: Downloads and Source Badge */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-zinc-400 text-sm">
+          <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+            <div className="flex items-center gap-1.5 text-zinc-400 text-sm font-medium group-hover:text-zinc-300 transition-colors">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className="h-4 w-4 text-emerald-500/70"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -79,7 +81,9 @@ export function ContentCard({ item, onClick }: ContentCardProps) {
             </div>
 
             <Badge
-              className="flex items-center gap-1.5 border-white/10 bg-zinc-900/50 text-zinc-300"
+              className={`flex items-center gap-1.5 border-white/10 px-2 py-0.5 transition-colors ${
+                item.source === 'modrinth' ? 'bg-zinc-950/50 hover:bg-zinc-900 group-hover:border-emerald-500/30' : 'bg-zinc-950/50 hover:bg-zinc-900 group-hover:border-orange-500/30'
+              }`}
             >
               {item.source === 'modrinth' ? (
                 <>
@@ -88,9 +92,9 @@ export function ContentCard({ item, onClick }: ContentCardProps) {
                     alt="Modrinth"
                     width={14}
                     height={14}
-                    className="text-emerald-500"
+                    className="text-emerald-500 group-hover:scale-110 transition-transform"
                   />
-                  <span>Modrinth</span>
+                  <span className="font-medium tracking-wide text-xs">Modrinth</span>
                 </>
               ) : (
                 <>
@@ -99,9 +103,9 @@ export function ContentCard({ item, onClick }: ContentCardProps) {
                     alt="CurseForge"
                     width={14}
                     height={14}
-                    className="text-orange-500"
+                    className="text-orange-500 group-hover:scale-110 transition-transform"
                   />
-                  <span>CurseForge</span>
+                  <span className="font-medium tracking-wide text-xs">CurseForge</span>
                 </>
               )}
             </Badge>

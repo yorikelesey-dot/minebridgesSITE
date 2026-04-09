@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VersionFile } from '@/lib/types';
-import { Download, ExternalLink, Calendar, HardDrive } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Calendar, Download, ExternalLink, HardDrive } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface VersionSelectorProps {
   itemId: string;
@@ -54,7 +55,6 @@ export function VersionSelector({ itemId, source }: VersionSelectorProps) {
       v.gameVersions.forEach(gv => versionSet.add(gv));
     });
     return Array.from(versionSet).sort((a, b) => {
-      // Sort versions in descending order (newest first)
       return b.localeCompare(a, undefined, { numeric: true });
     });
   }, [versions]);
@@ -113,10 +113,10 @@ export function VersionSelector({ itemId, source }: VersionSelectorProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
-        <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
+      <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/5 shadow-2xl rounded-2xl p-6 relative overflow-hidden">
+        <h3 className="text-lg font-bold text-white mb-4">Version Selection</h3>
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
         </div>
       </div>
     );
@@ -124,67 +124,71 @@ export function VersionSelector({ itemId, source }: VersionSelectorProps) {
 
   if (error) {
     return (
-      <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
-        <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
-        <p className="text-red-400 text-sm">{error}</p>
+      <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/5 shadow-2xl rounded-2xl p-6 relative overflow-hidden">
+        <h3 className="text-lg font-bold text-white mb-4">Version Selection</h3>
+        <p className="text-red-400 text-sm font-medium">{error}</p>
       </div>
     );
   }
 
   if (versions.length === 0) {
     return (
-      <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
-        <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
-        <p className="text-zinc-400 text-sm">No versions available</p>
+      <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/5 shadow-2xl rounded-2xl p-6 relative overflow-hidden">
+        <h3 className="text-lg font-bold text-white mb-4">Version Selection</h3>
+        <p className="text-zinc-400 text-sm font-medium">No versions available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-zinc-900 rounded-lg p-4 sm:p-6 border border-white/10">
-      <h3 className="text-base sm:text-lg font-semibold mb-4">Version Selection</h3>
+    <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/5 shadow-2xl rounded-2xl p-6 relative overflow-hidden">
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 blur-[64px] rounded-full pointer-events-none" />
+      <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+        Version Selection
+      </h3>
       
-      <div className="space-y-4">
+      <div className="space-y-6 relative z-10">
         {/* Game Version Selector with Search */}
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
+          <label className="block text-sm font-semibold text-zinc-300 mb-2">
             Minecraft Version
           </label>
           <input
             type="text"
-            placeholder="Search versions (e.g., 1.20, 1.19.4)..."
+            placeholder="Search versions (e.g., 1.20)..."
             value={versionSearch}
             onChange={(e) => setVersionSearch(e.target.value)}
-            className="w-full px-3 py-2 mb-2 bg-zinc-800 border border-white/10 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            className="w-full px-4 py-2.5 mb-3 bg-zinc-950/50 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm"
           />
           <Select value={selectedGameVersion} onValueChange={setSelectedGameVersion}>
-            <SelectTrigger className="w-full bg-zinc-800 border-white/10">
+            <SelectTrigger className="w-full bg-zinc-950/50 border-white/10 rounded-xl py-6 hover:bg-zinc-900 transition-colors">
               <SelectValue placeholder="Select Minecraft version" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-800 border-white/10 max-h-60">
+            <SelectContent className="bg-zinc-900/95 backdrop-blur-xl border-white/10 max-h-60 rounded-xl shadow-2xl">
               {filteredGameVersions.length > 0 ? (
                 filteredGameVersions.map(version => (
-                  <SelectItem key={version} value={version} className="text-white">
-                    {version}
+                  <SelectItem key={version} value={version} className="text-white hover:bg-emerald-500/20 focus:bg-emerald-500/20 cursor-pointer rounded-lg my-1 transition-colors">
+                    <span className="font-medium">{version}</span>
                   </SelectItem>
                 ))
               ) : (
-                <div className="px-2 py-6 text-center text-zinc-400 text-sm">
+                <div className="px-3 py-6 text-center text-zinc-400 text-sm">
                   No versions found
                 </div>
               )}
             </SelectContent>
           </Select>
           {versionSearch && filteredGameVersions.length > 0 && (
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs text-zinc-500 mt-2 font-medium">
               Showing {filteredGameVersions.length} of {gameVersions.length} versions
             </p>
           )}
         </div>
 
         {/* Loader Selector */}
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
+        <div className="pt-2">
+          <label className="block text-sm font-semibold text-zinc-300 mb-2">
             Mod Loader / Core
           </label>
           <Select 
@@ -192,76 +196,92 @@ export function VersionSelector({ itemId, source }: VersionSelectorProps) {
             onValueChange={setSelectedLoader}
             disabled={!selectedGameVersion}
           >
-            <SelectTrigger className="w-full bg-zinc-800 border-white/10">
+            <SelectTrigger className="w-full bg-zinc-950/50 border-white/10 rounded-xl py-6 hover:bg-zinc-900 transition-colors disabled:opacity-50 disabled:hover:bg-zinc-950/50">
               <SelectValue placeholder={selectedGameVersion ? "Select loader" : "Select version first"} />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-800 border-white/10">
+            <SelectContent className="bg-zinc-900/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl">
               {availableLoaders.map(loader => (
-                <SelectItem key={loader} value={loader} className="text-white capitalize">
-                  {loader}
+                <SelectItem key={loader} value={loader} className="text-white capitalize hover:bg-emerald-500/20 focus:bg-emerald-500/20 cursor-pointer rounded-lg my-1 transition-colors">
+                  <span className="font-medium">{loader}</span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Version Metadata */}
-        {selectedVersion && (
-          <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-white/10">
-            <h4 className="font-medium text-white mb-3 text-sm sm:text-base break-words">{selectedVersion.fileName}</h4>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-zinc-400">
-                <Calendar className="w-4 h-4 flex-shrink-0" />
-                <span>Released: {formatDate(selectedVersion.releaseDate)}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-zinc-400">
-                <HardDrive className="w-4 h-4 flex-shrink-0" />
-                <span>Size: {formatFileSize(selectedVersion.fileSize)}</span>
-              </div>
-            </div>
-
-            {selectedVersion.changelog && (
-              <div className="mt-3">
-                <a
-                  href={selectedVersion.changelog}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1"
-                >
-                  View Changelog
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            )}
-
-            <Button
-              asChild
-              className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white"
+        {/* Version Metadata - Animated Reveal */}
+        <AnimatePresence mode="wait">
+          {selectedVersion ? (
+            <motion.div
+              key="selected"
+              initial={{ opacity: 0, height: 0, y: -20 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="overflow-hidden"
             >
-              <a
-                href={selectedVersion.downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Download
-              </a>
-            </Button>
-          </div>
-        )}
+              <div className="mt-6 p-5 bg-zinc-950/40 rounded-xl border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
+                <h4 className="font-bold text-white mb-4 text-sm sm:text-base break-words text-emerald-400/90">{selectedVersion.fileName}</h4>
+                
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-3 text-zinc-300 font-medium bg-zinc-900/50 p-2 rounded-lg border border-white/5">
+                    <Calendar className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span>Released: {formatDate(selectedVersion.releaseDate)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 text-zinc-300 font-medium bg-zinc-900/50 p-2 rounded-lg border border-white/5">
+                    <HardDrive className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span>Size: {formatFileSize(selectedVersion.fileSize)}</span>
+                  </div>
+                </div>
 
-        {/* No Compatible Version Message */}
-        {selectedGameVersion && selectedLoader && !selectedVersion && (
-          <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-yellow-500/20">
-            <p className="text-yellow-400 text-sm">
-              No compatible version found for {selectedGameVersion} with {selectedLoader}.
-              Try selecting a different version or loader.
-            </p>
-          </div>
-        )}
+                {selectedVersion.changelog && (
+                  <div className="mt-4 flex justify-end">
+                    <a
+                      href={selectedVersion.changelog}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:text-emerald-300 text-sm font-semibold flex items-center gap-1.5 transition-colors hover:underline underline-offset-4"
+                    >
+                      View Changelog
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+
+                <Button
+                  asChild
+                  className="w-full mt-6 bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all duration-300 py-6 rounded-xl font-bold text-base hover:-translate-y-0.5"
+                >
+                  <a
+                    href={selectedVersion.downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download File
+                  </a>
+                </Button>
+              </div>
+            </motion.div>
+          ) : selectedGameVersion && selectedLoader && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-6 p-4 bg-red-500/10 rounded-xl border border-red-500/30">
+                <p className="text-red-400 text-sm font-medium">
+                  No compatible version found for {selectedGameVersion} with {selectedLoader}.
+                  Try selecting a different version or loader.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

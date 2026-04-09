@@ -56,6 +56,28 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        blob: {
+          "0%": { transform: "translate(0px, 0px) scale(1)" },
+          "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+          "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+          "100%": { transform: "translate(0px, 0px) scale(1)" },
+        },
+        glow: {
+          "0%": { opacity: "0.5", filter: "brightness(1)" },
+          "100%": { opacity: "1", filter: "brightness(1.2)" },
+        },
+        float: {
+          "0%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+          "100%": { transform: "translateY(0)" },
+        }
+      },
+      animation: {
+        blob: "blob 7s infinite",
+        glow: "glow 2s ease-in-out infinite alternate",
+        float: "float 6s ease-in-out infinite",
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],
